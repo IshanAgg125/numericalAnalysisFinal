@@ -50,9 +50,18 @@ def InvertL(L):
     #    L: nxn lower triangular matrix
     # Output:
     #    LINV: nxn lower triangular matrix
-            
+    
+    n = len(L)
+    LINV = np.zeros((n, n))
+    for i in range(n):
+        LINV[i, i] = 1 / L[i, i]
+        for j in range(i + 1, n):
+            LINV[j, i] = -sum(L[j, k] * LINV[k, i] for k in range(i, j)) / L[j, j]
+                
     return LINV
-
+    
+    
+        
 #####################################################################################################
 
 def Cholesky(A):
@@ -67,6 +76,7 @@ def Cholesky(A):
 #####################################################################################################
 
 def PLU(A):
+    L, U, P = 0, 0, 0
     
     # Input:
     #    A: nxn matrix
@@ -80,6 +90,7 @@ def PLU(A):
 #####################################################################################################
 
 def PLUSolve(A,b):
+    x = 0
     
     # Input:
     #    A: nxn matrix
@@ -92,21 +103,24 @@ def PLUSolve(A,b):
 #####################################################################################################
 
 def vector_2norm(x):
+    return
     
 
 #####################################################################################################
 
 def matrix_inf_norm(A):
+    return 
     
 
 #####################################################################################################
 
 def inner_product(x, y):
-    
+    return 
 
 #####################################################################################################
 
 def NeumannSeries(A, tol = 1e-12):
+    return 
     
     # Input:
     #    A: nxn matrix such that ||A|| < 1
@@ -118,6 +132,7 @@ def NeumannSeries(A, tol = 1e-12):
 #####################################################################################################
 
 def Jacobi(A, b):
+    x = 0
 
     # Input:
     #    A: nxn strictly diagonally dominant matrix
@@ -130,6 +145,7 @@ def Jacobi(A, b):
 #####################################################################################################
 
 def GaussSeidel(A, b):
+    x = 0
     
     # Input:
     #    A: nxn strictly diagonally dominant matrix
@@ -142,6 +158,7 @@ def GaussSeidel(A, b):
 #####################################################################################################
 
 def SOR(A, b, w):
+    x = 0
     
     # Input:
     #    A: nxn strictly diagonally dominant matrix
@@ -155,6 +172,7 @@ def SOR(A, b, w):
 #####################################################################################################
 
 def CG(A, b):
+    x = 0
     
     # Input:
     #    A: nxn symmetric positive definite matrix
@@ -167,6 +185,7 @@ def CG(A, b):
 #####################################################################################################
 
 def IncompleteCholesky(A):
+    x = 0
     
     # Input:
     #    A: nxn sparse symmetric, positive definite matrix
@@ -179,6 +198,8 @@ def IncompleteCholesky(A):
 
 def PCG(A, b, P = None):
     
+    x = 0
+    
     # Input:
     #    A: nxn symmetric positive definite matrix
     #    b: nx1 vector
@@ -190,4 +211,16 @@ def PCG(A, b, P = None):
     # If no preconditioner, use incomplete Cholesky factorization
 
     return x
+
+
+arr = np.array([[2, 0, 0],
+               [3, 1, 0],
+               [4, 5, 2]])
+
+# arr = np.array([[1, 0],
+#                 [3, 1]])
+
+
+print('Inverted L:')
+print(InvertL(arr))
     
