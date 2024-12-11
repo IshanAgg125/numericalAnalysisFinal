@@ -264,20 +264,30 @@ def Jacobi(A, b):
 #####################################################################################################
 
 def GaussSeidel(A, b):
-    x = 0
-    
     # Input:
     #    A: nxn strictly diagonally dominant matrix
     #    b: nx1 vector
     # Output:
     #    x: nx1 vector
-    
+    x = np.zeros_like(b)
+    n = len(A)
+    for k in range(100):
+        for i in range(n):
+            rowSum = 0
+            for j in range(n):
+                if i != j:
+                    rowSum += A[i][j] * x[j]
+            x[i] = (b[i] - rowSum)/A[i][i]
+            
+        print(f"Iteration {k+1}: {x}")
+        
     return x
+    
 
+    
 #####################################################################################################
 
 def SOR(A, b, w):
-    x = 0
     
     # Input:
     #    A: nxn strictly diagonally dominant matrix
@@ -285,13 +295,35 @@ def SOR(A, b, w):
     #    w: scalar relaxation parameter
     # Output:
     #    x: nx1 vector
+    
+    n = len(b)
+    x = np.zeros_like(b)
+    residuals = []
+    
+    tol = 1e-6
+    
+    for iteration in range(1000):
+        x_old = x.copy()
+        for i in range(n):
+            sum1 = np.dot(A[i, :i], x[:i])
+            sum2 = np.dot(A[i, i + 1:], x_old[i + 1:])
+            
+            x[i] = (1 - w) * x_old[i] + (w / A[i, i]) * (b[i] - sum1 - sum2)
+            
+        residual = sum((sum(A[i][j] * x[j] for j in range(n)) - b[i])**2 for i in range(n))**0.5
+        residuals.append(residual)
+        
+        if residual < tol:
+            print(f"{iteration + 1} iterations with residual {residual:.2e}")
+            break
+    
+
         
     return x
 
 #####################################################################################################
 
 def CG(A, b):
-    x = 0
     
     # Input:
     #    A: nxn symmetric positive definite matrix
@@ -299,7 +331,42 @@ def CG(A, b):
     # Output:
     #    x: nx1 vector
     
+    
+    n = len(b)
+    x = np.zeros(n)
+    
+    r = np.array([b[i] - sum(A[i][j] * x[j] for j in range(n)) for i in range(n)])
+    v = r.copy()
+    r_norm = vector_2norm(r)**2
+    
+    eps = 1e-6
+    
+    for k in range(1000):
+        Av = np.array([sum(A[i][j] * v[j] for j in range(n)) for i in range(n)])
+        
+        t = r_norm / sum(v[i] * Av[i] for i in range(n))
+        
+        x = x + t * v
+        
+        r = r - t * Av
+        
+        r_norm_new = vector_2norm(r)**2
+        
+        if vector_2norm(r) < eps:
+            print(f"{k + 1} iterations with residual {vector_2norm(r):.2e}")
+            break
+        
+        s = r_norm_new/r_norm
+        
+        v = r + s * v
+
+        r_norm = r_norm_new
+        
+        
     return x
+    
+
+    
 
 #####################################################################################################
 
@@ -332,14 +399,14 @@ def PCG(A, b, P = None):
     return x
 
 A = np.array([
-    [10., 2., 1.],
-    [2., 8., 3.],
-    [1., 3., 12.]
+    [4., 1., 0.],
+    [1., 3., -1.],
+    [0., -1., 2.]
 ])
 
-b = np.array([7., -4., 6.])
+b = np.array([15., 10., 10.])
 
-print(Jacobi(A, b))
+print(CG(A, b))
 # print(L)
 # print(U)
 # print(P)
