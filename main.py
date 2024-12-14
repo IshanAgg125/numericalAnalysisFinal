@@ -45,6 +45,7 @@ import copy
 
 def InvertL(L):
     
+    # the function the inverse of the lower triangular matrix and then returns it    
     
     # Input:
     #    L: nxn lower triangular matrix
@@ -65,6 +66,9 @@ def InvertL(L):
 #####################################################################################################
 
 def Cholesky(A):
+    
+    # The function calculates the Cholesky decomposition of a symmetric, positive definite matrix
+    # the return value is the Cholesky decomposition which is a Lower triangular matrix.
     n = len(A)
     L = np.zeros((n, n))
     for k in range(n):
@@ -81,6 +85,9 @@ def Cholesky(A):
 #####################################################################################################
 
 def PLU(A):
+    
+    # The function performs the PLU decomposition of a matrix A into P, L, and U.
+    # The P is the permutation matrix, L is the Lower triangular matrix, and U is the upper triangular matrix.
     
     # Input:
     #    A: nxn matrix
@@ -141,6 +148,9 @@ def PLU(A):
 
 def PLUSolve(A,b):
     
+    # The function solves the system of linear equations Ax = b using the PLU decomposition.
+    # Calling the PLU function for A and then solving the system of linear equations.
+    
     # Input:
     #    A: nxn matrix
     #    b: nx1 vector
@@ -172,6 +182,8 @@ def PLUSolve(A,b):
 #####################################################################################################
 
 def vector_2norm(x):
+    # The function returns the square root of the sum of the squared values of the vector.
+    
     return np.sqrt(np.sum(x**2))
 
     
@@ -179,6 +191,8 @@ def vector_2norm(x):
 #####################################################################################################
 
 def matrix_inf_norm(A):
+    # The function returns the maximum value of the sum of each row in the matrix.
+    
     return np.max(np.sum(np.abs(A), axis=1))
  
     
@@ -186,11 +200,16 @@ def matrix_inf_norm(A):
 #####################################################################################################
 
 def inner_product(x, y):
+    # The function returns the dot product of two vectors.
     return np.sum(x * y)
 
 #####################################################################################################
 
 def NeumannSeries(A, tol = 1e-12):
+    
+    # The function returns the Neumann series expansion of the given function around the given point.
+    # The return value is the (I - A)^-1 by iterativeley calculating A^j.
+    
     if matrix_inf_norm(A) >= 1:
         return "B = (I - A)^-1 cannot be computed as matrix_inf_norm(A) >= 1"
     
@@ -219,6 +238,9 @@ def NeumannSeries(A, tol = 1e-12):
 #####################################################################################################
 
 def Jacobi(A, b):
+    # solving system of equations iteratively by solving Ax = b. 
+    # Assumes A is diagonally dominant; updates x using only values from the previous iteration.
+    
     # Input:
     #    A: nxn strictly diagonally dominant matrix
     #    b: nx1 vector
@@ -264,20 +286,35 @@ def Jacobi(A, b):
 #####################################################################################################
 
 def GaussSeidel(A, b):
-    x = 0
+    # Solving Ax = b in an iterative solution. Different than jacobi and much faster.
+    # Assumes A is diagonally dominant; updates x in-place using the latest values.
     
     # Input:
     #    A: nxn strictly diagonally dominant matrix
     #    b: nx1 vector
     # Output:
     #    x: nx1 vector
-    
+    x = np.zeros_like(b)
+    n = len(A)
+    for k in range(100):
+        for i in range(n):
+            rowSum = 0
+            for j in range(n):
+                if i != j:
+                    rowSum += A[i][j] * x[j]
+            x[i] = (b[i] - rowSum)/A[i][i]
+            
+        print(f"Iteration {k+1}: {x}")
+        
     return x
+    
 
+    
 #####################################################################################################
 
 def SOR(A, b, w):
-    x = 0
+    # Solving Ax = b in an iterative solution. Better than Jacobi and Gauss-sidel.
+   # Extends Gauss-Seidel by applying a relaxation factor w to accelerate convergence.
     
     # Input:
     #    A: nxn strictly diagonally dominant matrix
@@ -285,13 +322,38 @@ def SOR(A, b, w):
     #    w: scalar relaxation parameter
     # Output:
     #    x: nx1 vector
+    
+    n = len(b)
+    x = np.zeros_like(b)
+    residuals = []
+    
+    tol = 1e-6
+    
+    for iteration in range(1000):
+        x_old = x.copy()
+        for i in range(n):
+            sum1 = np.dot(A[i, :i], x[:i])
+            sum2 = np.dot(A[i, i + 1:], x_old[i + 1:])
+            
+            x[i] = (1 - w) * x_old[i] + (w / A[i, i]) * (b[i] - sum1 - sum2)
+            
+        residual = sum((sum(A[i][j] * x[j] for j in range(n)) - b[i])**2 for i in range(n))**0.5
+        residuals.append(residual)
+        
+        if residual < tol:
+            print(f"{iteration + 1} iterations with residual {residual:.2e}")
+            break
+    
+
         
     return x
 
 #####################################################################################################
 
 def CG(A, b):
-    x = 0
+    
+    # Solves Ax = b for symmetric positive definite matrices using the Conjugate Gradient method.
+    # Minimizes the quadratic form of A iteratively in a conjugate direction for fast convergence.
     
     # Input:
     #    A: nxn symmetric positive definite matrix
@@ -299,12 +361,59 @@ def CG(A, b):
     # Output:
     #    x: nx1 vector
     
+    
+    n = len(b)
+    x = np.zeros(n)
+    
+    r = np.array([b[i] - sum(A[i][j] * x[j] for j in range(n)) for i in range(n)])
+    v = r.copy()
+    r_norm = inner_product(r, r)
+    eps = 1e-6
+    
+    for k in range(1000):
+        Av = np.array([sum(A[i][j] * v[j] for j in range(n)) for i in range(n)])
+        
+        t = r_norm / inner_product(v, Av)
+        
+        x = x + t * v
+        
+        r = r - t * Av
+        
+        r_norm_new = vector_2norm(r)**2
+        
+        if vector_2norm(r) < eps:
+            print(f"{k + 1} iterations with residual {vector_2norm(r):.2e}")
+            break
+        
+        s = r_norm_new/r_norm
+        
+        v = r + s * v
+
+        r_norm = r_norm_new
+        
+        
     return x
+    
+
+    
 
 #####################################################################################################
 
 def IncompleteCholesky(A):
-    x = 0
+    # this function computes the Incomplete Cholesky decomposition of a sparse 
+    # symmetric, postive definite matrix A. The return is a lower triangular matrix n x n.
+    L = np.zeros_like(A)
+    n = len(A)
+    tol = 1e-10
+    for k in range(n):
+        diagSum = np.sum(L[k, :k] ** 2)
+        L[k, k] = np.sqrt(max(A[k, k] - diagSum, 0))
+        for i in range(k + 1, n):
+            if A[i, k] != 0:
+                sumOffDiag = np.sum(L[i, :k] * L[k, :k])
+                L[i, k] = (A[i, k] - sumOffDiag) / L[k, k]
+                if abs(L[i, k]) < tol:
+                    L[i, k] = 0
     
     # Input:
     #    A: nxn sparse symmetric, positive definite matrix
@@ -317,7 +426,11 @@ def IncompleteCholesky(A):
 
 def PCG(A, b, P = None):
     
-    x = 0
+    # this function computes the Preconditioned Conjugate Gradient (PCG) method for solving a system of linear equations.
+    # If a preconditioner P is provided, it should be a symmetric matrix and positive definite.
+        # In this case, the method computes the preconditioned solution x = P^(-1) * b.
+    # Otherwise, it uses the incomplete Cholesky is called.
+    # The preconditioned residual r = P^(-1) * (b - Ax) is used to update the solution.
     
     # Input:
     #    A: nxn symmetric positive definite matrix
@@ -326,20 +439,73 @@ def PCG(A, b, P = None):
     #    P: Inverse of preconditioner, P^{-1}
     # Output:
     #    x: nx1 vector
-    
     # If no preconditioner, use incomplete Cholesky factorization
-
+    
+    
+    
+ 
+    
+    n = len(b)
+    x = np.zeros(n)
+    
+    r = b - np.dot(A, x)
+    if P is None:
+        L = IncompleteCholesky(A)
+        P = np.linalg.inv(L) @ np.linalg.inv(L.T)
+        
+    z = np.dot(P, r)
+    v = z.copy()
+    c = inner_product(z, r)
+    eps = 1e-6
+    delta = 1e-6
+    
+    for k in range(1000):
+        if vector_2norm(v) < delta:
+            print(f"{k + 1} iterations with residual {vector_2norm(v):.2e}")
+            break
+        
+        z = np.dot(A, v)
+        t = c/inner_product(v, z)
+        x = x + t * v
+        r = r - t * z
+        z = np.dot(P, r)
+        d = inner_product(z, r)
+        if vector_2norm(r) < eps:
+            if d < eps:
+                print(f"{k + 1} iterations with residual {vector_2norm(r):.2e}")
+                break
+            
+        v = z + (d/c) * v
+        c = d
+        
     return x
 
-A = np.array([
-    [10., 2., 1.],
-    [2., 8., 3.],
-    [1., 3., 12.]
-])
 
-b = np.array([7., -4., 6.])
+            
+    
+        
+        
+        
+    
 
-print(Jacobi(A, b))
+
+# A = np.array([
+#     [4., 1., 0.],
+#     [1., 3., -1.],
+#     [0., -1., 2.]
+# ])
+
+# b = np.array([15., 10., 10.])
+
+# A = np.array([
+#     [10., 2., 1.],
+#     [2., 8., 3.],
+#     [1., 3., 12.]
+# ])
+
+# b = np.array([7., -4., 6.])
+
+# print(PCG(A, b))
 # print(L)
 # print(U)
 # print(P)
